@@ -1,37 +1,33 @@
-import os
-from scripts.download_dataset import download_and_save_dataset
-from scripts.convert_arrow_to_parquet import convert_arrow_to_parquet
-
-class DatasetManager:
-    def __init__(self, dataset_name, save_path):
-        self.dataset_name = dataset_name
-        self.save_path = save_path
-
-    def ensure_directory_exists(self, path):
-        if not os.path.exists(path):
-            os.makedirs(path)
-            
-    def download_dataset(self):
-        download_and_save_dataset(self.dataset_name, self.save_path)
-
-    def convert_dataset(self, output_path):
-        self.ensure_directory_exists(output_path)
-        convert_arrow_to_parquet(self.save_path, output_path)
-
-    def execute(self, choice, output_path=None):
-        if choice == "download":
-            self.download_dataset()
-        elif choice == "convert" and output_path:
-            self.convert_dataset(output_path)
-        else:
-            raise ValueError("Invalid choice or missing output_path for conversion")
+import argparse
+from src.preprocessing.data_collection import DataCollector
+from src.preprocessing.data_exporation import DataExplorer
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Dataset Manager")
+    parser.add_argument("--collect", action="store_true", help="Download and convert the dataset")
+    parser.add_argument("--explore", action="store_true", help="Explore the dataset")
+
+    args = parser.parse_args()
+
     dataset_name = "Magpie-Align/Magpie-Reasoning-150K"
     save_path = f"data/raw/{dataset_name}"
     output_path = f"data/processed/{dataset_name}"
 
-    manager = DatasetManager(dataset_name, save_path)
-    
-    manager.execute("download")
-    manager.execute("convert", output_path)
+    manager = DataCollector(dataset_name, save_path)
+
+    if args.collect:
+        manager.execute("download")
+        manager.execute("convert_parquet", output_path)
+    elif args.explore:
+        # Add your exploration code here
+        dataset_paths = [
+            'data/processed/KingNish/reasoning-base-20k',
+            #'data/processed/Magpie-Align/Magpie-Reasoning-150K',
+            #'data/processed/SkunkworksAI/reasoning-0.01'
+        ]
+        explorer = DataExplorer(dataset_paths)
+        explorer.basic_info()
+        explorer.summary_statistics()
+        explorer.missing_values()
+    else:
+        print("Please specify --collect or --explore")
